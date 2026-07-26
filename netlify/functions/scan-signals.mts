@@ -26,7 +26,7 @@ function computeRSI(closes: number[]) {
 }
 
 async function getTopSymbols(): Promise<string[]> {
-  const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+  const res = await fetch("https://data-api.binance.vision/api/v3/ticker/24hr");
   const all = await res.json();
   return all
     .filter((t: any) => t.symbol.endsWith("USDT") && !t.symbol.includes("UP") && !t.symbol.includes("DOWN") && !t.symbol.includes("BEAR") && !t.symbol.includes("BULL"))
@@ -36,7 +36,7 @@ async function getTopSymbols(): Promise<string[]> {
 }
 
 async function fetchCloses(symbol: string): Promise<number[]> {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=120`;
+  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=1h&limit=120`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("http " + res.status);
   const raw = await res.json();
