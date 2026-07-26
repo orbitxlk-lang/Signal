@@ -21,6 +21,8 @@ type Setup = {
   n2Price: number; n2Time: number;
   zoneLow: number; zoneHigh: number;
   formedTime: number;
+  touched: boolean;       // true = price already entered the zone
+  touchedTime: number | null; // timestamp of first touch
 };
 
 function computeRSISeries(closes: number[]): (number | null)[] {
@@ -104,17 +106,19 @@ function findSetups(symbol: string, candles: Candle[]): Setup[] {
     const zoneLow = n2 - EXT_FAR * diff;
     const formedTime = dayC.candles[dayC.candles.length - 1].time;
 
-    // Has price already traded into the zone since this setup formed?
-    const alreadyHit = candles.some(
+    // Check if price already traded into the zone (don't skip — still show, mark as touched)
+    const touchCandles = candles.filter(
       (c) => c.time > formedTime && c.low <= zoneHigh && c.high >= zoneLow
     );
-    if (alreadyHit) continue;
+    const touched = touchCandles.length > 0;
+    const touchedTime = touched ? touchCandles[0].time : null;
 
     setups.push({
       symbol,
       n1Price: n1, n1Time: n1Candle.time,
       n2Price: n2, n2Time: touchCandle.time,
       zoneLow, zoneHigh, formedTime,
+      touched, touchedTime,
     });
   }
   return setups;
@@ -153,12 +157,17 @@ async function sendEmail(setup: Setup, recipients: string[]) {
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
   });
   const label = setup.symbol.replace("USDT", "/USDT");
+  const status = setup.touched
+    ? `⚠️ ZONE ALREADY TOUCHED on ${dateLabel(setup.touchedTime!)} — historical reference`
+    : `✅ FRESH — price has NOT yet entered this zone`;
   const text =
     `${label} — SELL zone setup\n\n` +
+    `Status: ${status}\n\n` +
     `Zone: ${fmtPrice(setup.zoneLow)} – ${fmtPrice(setup.zoneHigh)}\n` +
+    `Zone formed: ${dateLabel(setup.formedTime)}\n` +
     `N1 (overbought peak): ${fmtPrice(setup.n1Price)} on ${dateLabel(setup.n1Time)}\n` +
     `N2 (RSI-40 touch low): ${fmtPrice(setup.n2Price)} on ${dateLabel(setup.n2Time)}\n\n` +
-    `Price hasn't reached this zone yet — watch it manually for a reversal. Not financial advice.`;
+    `Not financial advice.`;
 
   for (const to of recipients) {
     try {
@@ -206,11 +215,14 @@ export default async () => {
 
   const currentKeys = new Set<string>();
   for (const setup of allSetups) {
-    const key = `${setup.symbol}:${setup.n1Time}:${setup.n2Time}`;
+    // Use a key that includes touched state — so when a fresh zone gets touched,
+    // subscribers get a NEW email flagged as "zone touched" (not silently skipped).
+    const touchedSuffix = setup.touched ? `:touched:${setup.touchedTime}` : `:fresh`;
+    const key = `${setup.symbol}:${setup.n1Time}:${setup.n2Time}${touchedSuffix}`;
     currentKeys.add(key);
     if (!notified.has(key)) {
       await sendEmail(setup, recipientList);
-      console.log(`Emailed setup for ${setup.symbol} to ${recipientList.length} recipient(s)`);
+      console.log(`Emailed ${setup.touched ? "TOUCHED" : "FRESH"} setup for ${setup.symbol} to ${recipientList.length} recipient(s)`);
     }
   }
 
