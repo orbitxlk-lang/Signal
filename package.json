@@ -1,0 +1,10 @@
+{
+  "name": "signal-scanner-backend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@netlify/functions": "^2.8.1",
+    "@netlify/blobs": "^8.1.0",
+    "nodemailer": "^6.9.14"
+  }
+}
