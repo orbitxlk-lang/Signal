@@ -1,1 +1,324 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Signal Scanner — RSI + Fibonacci</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root{
+    --bg:#0B1120; --surface:#141B2D; --surface-2:#1B2338; --line:#26304A;
+    --text:#E8ECF4; --text-dim:#8B96B3; --gold:#D4A94E; --buy:#35C29A; --sell:#E85D5D;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; min-height:100vh; padding:20px 16px 60px; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:520px; margin:0 auto;}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+  .brand{font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:19px;}
+  .brand span{color:var(--gold);}
+  .status{font-size:12px; color:var(--text-dim); display:flex; align-items:center; font-family:'IBM Plex Mono', monospace;}
+  .status-dot{width:8px; height:8px; border-radius:50%; background:var(--text-dim); display:inline-block; margin-right:6px;}
+  .status-dot.live{background:var(--buy); box-shadow:0 0 8px var(--buy);}
+  .status-dot.scanning{background:var(--gold); box-shadow:0 0 8px var(--gold); animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1} 50%{opacity:0.3}}
+
+  .scan-bar{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:16px;}
+  .scan-top{display:flex; justify-content:space-between; font-size:12px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; margin-bottom:8px;}
+  .scan-track{height:5px; background:var(--surface-2); border-radius:3px; overflow:hidden;}
+  .scan-fill{height:100%; background:var(--gold); border-radius:3px; width:0%; transition:width 0.2s ease;}
+
+  .hits-summary{
+    background:linear-gradient(165deg, var(--surface) 0%, var(--surface-2) 100%);
+    border:1px solid var(--line); border-radius:20px; padding:22px; margin-bottom:16px; text-align:center;
+  }
+  .hits-count{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:38px;}
+  .hits-count.zero{color:var(--text-dim);}
+  .hits-count.some{color:var(--gold);}
+  .hits-label{font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1.5px; margin-top:2px;}
+
+  .card-title{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-dim); margin:18px 4px 10px;}
+
+  .signal-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  }
+  .signal-card.buy{border-color:rgba(53,194,154,0.4); background:rgba(53,194,154,0.07);}
+  .signal-card.sell{border-color:rgba(232,93,93,0.4); background:rgba(232,93,93,0.07);}
+  .sig-icon{width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; font-family:'Space Grotesk',sans-serif; font-weight:700;}
+  .signal-card.buy .sig-icon{background:var(--buy); color:#04231a;}
+  .signal-card.sell .sig-icon{background:var(--sell); color:#2b0a0a;}
+  .sig-body{flex:1; min-width:0;}
+  .sig-top{display:flex; justify-content:space-between; align-items:baseline;}
+  .sig-coin{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;}
+  .sig-price{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-dim);}
+  .sig-reason{font-size:12px; color:var(--text-dim); margin-top:3px; line-height:1.4;}
+  .sig-badge{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; padding:2px 8px; border-radius:8px;}
+  .signal-card.buy .sig-badge{background:var(--buy); color:#04231a;}
+  .signal-card.sell .sig-badge{background:var(--sell); color:#2b0a0a;}
+
+  .empty-state{
+    background:var(--surface); border:1px dashed var(--line); border-radius:16px;
+    padding:28px 20px; text-align:center; color:var(--text-dim); font-size:13px; line-height:1.6;
+  }
+
+  .watch-row{
+    display:flex; align-items:center; justify-content:space-between; padding:9px 4px;
+    border-bottom:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+  }
+  .watch-row:last-child{border-bottom:none;}
+  .watch-coin{color:var(--text); font-weight:600; width:90px;}
+  .watch-rsi{color:var(--text-dim); width:70px;}
+  .watch-rsi.low{color:var(--sell);} .watch-rsi.high{color:var(--buy);}
+  .watch-price{color:var(--text-dim); text-align:right; flex:1;}
+  .watch-list-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:6px 16px;}
+
+  footer{text-align:center; font-size:11.5px; color:var(--text-dim); margin-top:22px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span>◆</span> Signal Scanner</div>
+    <div class="status"><span class="status-dot" id="statusDot"></span><span id="statusText">starting</span></div>
+  </header>
+
+  <div class="scan-bar">
+    <div class="scan-top"><span id="scanLabel">Scanning top volume pairs…</span><span id="scanCount">0 / 0</span></div>
+    <div class="scan-track"><div class="scan-fill" id="scanFill"></div></div>
+  </div>
+
+  <div class="hits-summary">
+    <div class="hits-count zero" id="hitsCount">0</div>
+    <div class="hits-label">active signals right now</div>
+  </div>
+
+  <div class="card-title">Active Signals</div>
+  <div id="hitsList"><div class="empty-state">Scanning market… matching coins will appear here.</div></div>
+
+  <div class="card-title">Watchlist (closest to a signal)</div>
+  <div class="watch-list-card"><div id="watchList"></div></div>
+
+  <footer>
+    Scans top ~50 USDT pairs by 24h volume · Signal = RSI(14) below 30 (buy) or above 70 (sell), 1h timeframe.<br>
+    Fib levels shown for chart reference only. Signal only — does not place trades. Not financial advice.
+  </footer>
+</div>
+
+<script>
+const RSI_PERIOD=14, RSI_OVERSOLD=30, RSI_OVERBOUGHT=70;
+const SWING_LOOKBACK=50, FIB_TOLERANCE_PCT=0.006; // slightly wider so the scanner finds real hits
+const TOP_N_COINS=50;
+const SCAN_INTERVAL_MS=180000; // rescan every 3 min (keeps us well under Binance rate limits)
+
+// ===== EmailJS config (free tier — emailjs.com) =====
+// Fill these in with your own EmailJS account values.
+const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+const NOTIFY_TO_EMAIL     = "your@email.com";
+let emailjsReady = false;
+try{
+  if(window.emailjs && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY"){
+    emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
+    emailjsReady = true;
+  }
+}catch(e){ console.error("EmailJS init failed", e); }
+
+// Remembers which signals we've already emailed about, so we don't spam
+// the same BUY/SELL alert every scan. Survives page reloads via localStorage.
+const NOTIFIED_KEY = "signalScanner_notified";
+function loadNotified(){
+  try{ return new Set(JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "[]")); }
+  catch(e){ return new Set(); }
+}
+function saveNotified(set){
+  try{ localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...set])); }catch(e){}
+}
+let notifiedSignals = loadNotified();
+
+function sendSignalEmail(hit){
+  if(!emailjsReady) return;
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email: NOTIFY_TO_EMAIL,
+    symbol: hit.symbol.replace("USDT","/USDT"),
+    signal: hit.signal,
+    price: fmtPrice(hit.price),
+    rsi: hit.rsi.toFixed(1),
+    reason: hit.reason
+  }).catch(e => console.error("EmailJS send failed", e));
+}
+
+function notifyNewSignals(hits){
+  const currentKeys = new Set();
+  for(const hit of hits){
+    const key = hit.symbol + ":" + hit.signal;
+    currentKeys.add(key);
+    if(!notifiedSignals.has(key)){
+      sendSignalEmail(hit);
+    }
+  }
+  // Forget signals that are no longer active, so if they trigger again later
+  // (e.g. RSI dips back below 30 after recovering) a fresh email goes out.
+  notifiedSignals = currentKeys;
+  saveNotified(notifiedSignals);
+}
+
+function computeRSI(closes){
+  let gains=[], losses=[];
+  for(let i=1;i<closes.length;i++){
+    const d=closes[i]-closes[i-1];
+    gains.push(Math.max(d,0)); losses.push(Math.max(-d,0));
+  }
+  let avgGain=gains.slice(0,RSI_PERIOD).reduce((a,b)=>a+b,0)/RSI_PERIOD;
+  let avgLoss=losses.slice(0,RSI_PERIOD).reduce((a,b)=>a+b,0)/RSI_PERIOD;
+  const rsiArr=[];
+  for(let i=RSI_PERIOD;i<gains.length;i++){
+    avgGain=(avgGain*(RSI_PERIOD-1)+gains[i])/RSI_PERIOD;
+    avgLoss=(avgLoss*(RSI_PERIOD-1)+losses[i])/RSI_PERIOD;
+    const rs = avgLoss===0?100:avgGain/avgLoss;
+    rsiArr.push(100-(100/(1+rs)));
+  }
+  return rsiArr;
+}
+function fibLevels(high, low){
+  const diff=high-low;
+  return {"23.6":high-0.236*diff,"38.2":high-0.382*diff,"50.0":high-0.5*diff,"61.8":high-0.618*diff};
+}
+function nearestLevelDistPct(price, levels){
+  let best=Infinity, bestName=null;
+  for(const [name,lvl] of Object.entries(levels)){
+    const d=Math.abs(price-lvl)/lvl;
+    if(d<best){best=d; bestName=name;}
+  }
+  return {dist:best, name:bestName};
+}
+
+async function getTopSymbols(){
+  const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+  const all = await res.json();
+  return all
+    .filter(t => t.symbol.endsWith("USDT") && !t.symbol.includes("UP") && !t.symbol.includes("DOWN") && !t.symbol.includes("BEAR") && !t.symbol.includes("BULL"))
+    .sort((a,b)=> parseFloat(b.quoteVolume)-parseFloat(a.quoteVolume))
+    .slice(0, TOP_N_COINS)
+    .map(t=>t.symbol);
+}
+
+async function fetchCandles(symbol){
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=120`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("http "+res.status);
+  const raw = await res.json();
+  return raw.map(c=>({high:+c[2], low:+c[3], close:+c[4]}));
+}
+
+function analyze(candles){
+  const closes = candles.map(c=>c.close);
+  const rsiArr = computeRSI(closes);
+  const currentRSI = rsiArr[rsiArr.length-1];
+  const prevRSI = rsiArr[rsiArr.length-2];
+  const currentPrice = closes[closes.length-1];
+  const win = candles.slice(-SWING_LOOKBACK);
+  const swingHigh = Math.max(...win.map(c=>c.high));
+  const swingLow = Math.min(...win.map(c=>c.low));
+  const levels = fibLevels(swingHigh, swingLow);
+  const nearest = nearestLevelDistPct(currentPrice, levels);
+  const levelHit = nearest.dist <= FIB_TOLERANCE_PCT ? nearest.name : null;
+
+  // Simple strategy: plain RSI oversold/overbought (no fib confluence required).
+  // Fib levels are still computed and shown for your own chart reference.
+  let signal="NONE", reason="";
+  if(currentRSI < RSI_OVERSOLD){
+    signal="BUY"; reason=`RSI ${currentRSI.toFixed(1)} is oversold (below ${RSI_OVERSOLD}) — check the chart before entering`;
+  } else if(currentRSI > RSI_OVERBOUGHT){
+    signal="SELL"; reason=`RSI ${currentRSI.toFixed(1)} is overbought (above ${RSI_OVERBOUGHT}) — check the chart before entering`;
+  }
+  return {signal, price:currentPrice, rsi:currentRSI, levelHit, reason, nearestDist:nearest.dist, nearestName:nearest.name};
+}
+
+function setStatus(mode, text){
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (mode==='scanning' ? ' scanning' : mode==='live' ? ' live' : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+function fmtPrice(p){ return "$"+p.toLocaleString(undefined,{maximumFractionDigits:p<10?4:2}); }
+
+function renderResults(results){
+  const hits = results.filter(r=>r.signal!=="NONE").sort((a,b)=>{
+    const aExt = a.signal==="BUY" ? a.rsi : 100-a.rsi;
+    const bExt = b.signal==="BUY" ? b.rsi : 100-b.rsi;
+    return aExt-bExt; // most extreme RSI first
+  });
+  const countEl = document.getElementById('hitsCount');
+  countEl.textContent = hits.length;
+  countEl.className = "hits-count " + (hits.length>0 ? "some":"zero");
+
+  notifyNewSignals(hits);
+
+  const hitsList = document.getElementById('hitsList');
+  if(hits.length===0){
+    hitsList.innerHTML = `<div class="empty-state">No coin is matching the RSI + Fibonacci setup right now.<br>Scanner rechecks every 3 minutes.</div>`;
+  }else{
+    hitsList.innerHTML = hits.map(r=>`
+      <div class="signal-card ${r.signal.toLowerCase()}">
+        <div class="sig-icon">${r.signal==="BUY"?"▲":"▼"}</div>
+        <div class="sig-body">
+          <div class="sig-top">
+            <span class="sig-coin">${r.symbol.replace("USDT","/USDT")}</span>
+            <span class="sig-badge">${r.signal}</span>
+          </div>
+          <div class="sig-price">${fmtPrice(r.price)} · RSI ${r.rsi.toFixed(1)}</div>
+          <div class="sig-reason">${r.reason}</div>
+        </div>
+      </div>`).join("");
+  }
+
+  const rsiDistToZone = (rsi) => Math.min(Math.abs(rsi-RSI_OVERSOLD), Math.abs(rsi-RSI_OVERBOUGHT));
+  const watchCandidates = results
+    .filter(r=>r.signal==="NONE")
+    .sort((a,b)=> rsiDistToZone(a.rsi)-rsiDistToZone(b.rsi))
+    .slice(0,8);
+  document.getElementById('watchList').innerHTML = watchCandidates.map(r=>`
+    <div class="watch-row">
+      <span class="watch-coin">${r.symbol.replace("USDT","")}</span>
+      <span class="watch-rsi ${r.rsi<40?'low':r.rsi>60?'high':''}">RSI ${r.rsi.toFixed(1)}</span>
+      <span class="watch-price">${fmtPrice(r.price)} · fib ${r.nearestName}%</span>
+    </div>`).join("");
+}
+
+async function runScan(){
+  try{
+    setStatus('scanning', 'fetching symbol list');
+    const symbols = await getTopSymbols();
+    document.getElementById('scanCount').textContent = `0 / ${symbols.length}`;
+
+    const results = [];
+    for(let i=0;i<symbols.length;i++){
+      const sym = symbols[i];
+      try{
+        const candles = await fetchCandles(sym);
+        const a = analyze(candles);
+        results.push({symbol: sym, ...a});
+      }catch(e){ /* skip symbol on error */ }
+
+      document.getElementById('scanCount').textContent = `${i+1} / ${symbols.length}`;
+      document.getElementById('scanFill').style.width = `${((i+1)/symbols.length)*100}%`;
+      setStatus('scanning', `checking ${sym.replace("USDT","")}`);
+      await new Promise(r=>setTimeout(r, 120)); // small delay so we stay well under rate limits
+    }
+
+    renderResults(results);
+    setStatus('live', `live · last scan just now · next in 3m`);
+  }catch(e){
+    console.error(e);
+    setStatus('error', 'scan failed — retrying next cycle');
+  }
+}
+
+runScan();
+setInterval(runScan, SCAN_INTERVAL_MS);
+</script>
+</body>
+</html>
