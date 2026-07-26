@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Signal Scanner — RSI + Fibonacci</title>
+<title>Signal Scanner — Fib Extension Setups</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
   :root{
     --bg:#060911; --bg-alt:#0A0F1A;
@@ -27,7 +26,6 @@
   }
   .wrap{max-width:520px; margin:0 auto; padding:0 16px;}
 
-  /* ---- ticker tape (signature element) ---- */
   .ticker-outer{
     background:var(--bg-alt); border-bottom:1px solid var(--line-soft);
     overflow:hidden; white-space:nowrap; padding:9px 0; margin-bottom:22px;
@@ -60,7 +58,6 @@
   .panel{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 17px; margin-bottom:14px;}
   .panel-label{font-size:10.5px; text-transform:uppercase; letter-spacing:1.6px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace; margin-bottom:10px;}
 
-  /* subscribe */
   .sub-row{display:flex; gap:8px;}
   .sub-row input{
     flex:1; background:var(--surface-2); border:1px solid var(--line); border-radius:9px;
@@ -75,12 +72,10 @@
   .sub-row button:active{opacity:0.85;}
   #subMsg{font-size:11.5px; color:var(--text-dim); margin-top:8px; min-height:14px;}
 
-  /* scan progress */
   .scan-top{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; margin-bottom:9px;}
   .scan-track{height:4px; background:var(--surface-2); border-radius:3px; overflow:hidden;}
   .scan-fill{height:100%; background:var(--gold); border-radius:3px; width:0%; transition:width 0.2s ease;}
 
-  /* hero count */
   .hits-summary{
     background:linear-gradient(165deg, var(--surface) 0%, var(--surface-2) 100%);
     border:1px solid var(--line); border-radius:18px; padding:26px 22px; margin-bottom:14px; text-align:center;
@@ -98,41 +93,20 @@
 
   .card-title{font-size:10.5px; text-transform:uppercase; letter-spacing:1.6px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace; margin:20px 3px 10px;}
 
-  .signal-card{
-    background:var(--surface); border:1px solid var(--line); border-radius:14px;
-    padding:14px 16px; margin-bottom:9px; display:flex; align-items:center; gap:12px;
-  }
-  .signal-card.buy{border-color:rgba(47,191,143,0.35); background:var(--buy-soft);}
-  .signal-card.sell{border-color:rgba(224,87,90,0.35); background:var(--sell-soft);}
-  .sig-icon{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; font-family:'Space Grotesk',sans-serif; font-weight:700;}
-  .signal-card.buy .sig-icon{background:var(--buy); color:#04231a;}
-  .signal-card.sell .sig-icon{background:var(--sell); color:#2b0a0a;}
-  .sig-body{flex:1; min-width:0;}
-  .sig-top{display:flex; justify-content:space-between; align-items:baseline;}
-  .sig-coin{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.5px;}
-  .sig-price{font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--text-dim);}
-  .sig-reason{font-size:12px; color:var(--text-dim); margin-top:4px; line-height:1.4;}
-  .sig-badge{font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:6px; letter-spacing:0.5px;}
-  .signal-card.buy .sig-badge{background:var(--buy); color:#04231a;}
-  .signal-card.sell .sig-badge{background:var(--sell); color:#2b0a0a;}
+  .coin-group{background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; overflow:hidden;}
+  .coin-head{display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line-soft);}
+  .coin-name{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.5px;}
+  .coin-count{font-size:10.5px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace;}
+  .setup-row{padding:12px 16px; border-bottom:1px solid var(--line-soft); background:var(--sell-soft);}
+  .setup-row:last-child{border-bottom:none;}
+  .setup-zone{font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:var(--sell); font-weight:600;}
+  .setup-meta{font-size:11.5px; color:var(--text-dim); margin-top:5px; line-height:1.5;}
 
   .empty-state{
     background:var(--surface); border:1px dashed var(--line); border-radius:14px;
     padding:26px 20px; text-align:center; color:var(--text-dim); font-size:12.5px; line-height:1.6;
   }
 
-  .watch-row{
-    display:flex; align-items:center; justify-content:space-between; padding:9px 3px;
-    border-bottom:1px solid var(--line-soft); font-family:'IBM Plex Mono',monospace; font-size:12px;
-  }
-  .watch-row:last-child{border-bottom:none;}
-  .watch-coin{color:var(--text); font-weight:600; width:90px;}
-  .watch-rsi{color:var(--text-dim); width:70px;}
-  .watch-rsi.low{color:var(--sell);} .watch-rsi.high{color:var(--buy);}
-  .watch-price{color:var(--text-dim); text-align:right; flex:1;}
-  .watch-list-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:5px 16px;}
-
-  /* chart */
   .chart-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
   .chart-symbol{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;}
   .chart-tag{font-size:10.5px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace;}
@@ -155,7 +129,7 @@
       <div class="brand-glyph">◆</div>
       <div>
         <div class="brand">Signal Scanner</div>
-        <div class="brand-sub">RSI · FIB · Live</div>
+        <div class="brand-sub">Daily RSI · Fib Ext</div>
       </div>
     </div>
     <div class="status"><span class="status-dot" id="statusDot"></span><span id="statusText">starting</span></div>
@@ -177,11 +151,11 @@
 
   <div class="hits-summary">
     <div class="hits-count zero" id="hitsCount">0</div>
-    <div class="hits-label">active signals right now</div>
+    <div class="hits-label">active setups, not yet reached</div>
   </div>
 
-  <div class="card-title">Active Signals</div>
-  <div id="hitsList"><div class="empty-state">Scanning market… matching coins will appear here.</div></div>
+  <div class="card-title">Active Setups</div>
+  <div id="hitsList"><div class="empty-state">Scanning market… matching setups will appear here.</div></div>
 
   <div class="card-title">Chart</div>
   <div class="panel" style="padding:14px;">
@@ -192,97 +166,97 @@
     <div class="chart-box" id="chartBox"></div>
   </div>
 
-  <div class="card-title">Watchlist (closest to a signal)</div>
-  <div class="watch-list-card"><div id="watchList"></div></div>
-
   <footer>
-    Scans top ~50 USDT pairs by 24h volume · Signal = RSI(14) below 30 (buy) or above 70 (sell), 1h timeframe.<br>
-    Fib levels shown for chart reference only. Signal only — does not place trades. Not financial advice.
+    Scans top ~50 USDT pairs by 24h volume, last 30 days of daily structure.<br>
+    Setup: overbought (RSI&gt;70) peak (N1) after an RSI-40 touch low (N2, no overbought/oversold between them) → fib extension zone 1.272–1.618 below N2.
+    Shown only while price hasn't reached the zone yet. Manual entry — not financial advice.
   </footer>
 </div>
 
 <script>
-const RSI_PERIOD=14, RSI_OVERSOLD=30, RSI_OVERBOUGHT=70;
-const SWING_LOOKBACK=50, FIB_TOLERANCE_PCT=0.006; // slightly wider so the scanner finds real hits
+const RSI_PERIOD=14, TOUCH_LEVEL=40, OVERBOUGHT=70, OVERSOLD=30;
+const EXT_NEAR=0.272, EXT_FAR=0.618;
+const LOOKBACK_DAYS=30;
 const TOP_N_COINS=50;
-const SCAN_INTERVAL_MS=180000; // rescan every 3 min (keeps us well under Binance rate limits)
+const DAY_MS=86400000;
+const SCAN_INTERVAL_MS=180000;
 
-// ===== EmailJS config (free tier — emailjs.com) — optional client-side path =====
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const NOTIFY_TO_EMAIL     = "your@email.com";
-let emailjsReady = false;
-try{
-  if(window.emailjs && EMAILJS_PUBLIC_KEY !== "YOUR_PUBLIC_KEY"){
-    emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
-    emailjsReady = true;
-  }
-}catch(e){ console.error("EmailJS init failed", e); }
-
-const NOTIFIED_KEY = "signalScanner_notified";
-function loadNotified(){
-  try{ return new Set(JSON.parse(localStorage.getItem(NOTIFIED_KEY) || "[]")); }
-  catch(e){ return new Set(); }
-}
-function saveNotified(set){
-  try{ localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...set])); }catch(e){}
-}
-let notifiedSignals = loadNotified();
-
-function sendSignalEmail(hit){
-  if(!emailjsReady) return;
-  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-    to_email: NOTIFY_TO_EMAIL,
-    symbol: hit.symbol.replace("USDT","/USDT"),
-    signal: hit.signal,
-    price: fmtPrice(hit.price),
-    rsi: hit.rsi.toFixed(1),
-    reason: hit.reason
-  }).catch(e => console.error("EmailJS send failed", e));
-}
-
-function notifyNewSignals(hits){
-  const currentKeys = new Set();
-  for(const hit of hits){
-    const key = hit.symbol + ":" + hit.signal;
-    currentKeys.add(key);
-    if(!notifiedSignals.has(key)){
-      sendSignalEmail(hit);
-    }
-  }
-  notifiedSignals = currentKeys;
-  saveNotified(notifiedSignals);
-}
-
-function computeRSI(closes){
+function computeRSISeries(closes){
+  const out = new Array(closes.length).fill(null);
   let gains=[], losses=[];
   for(let i=1;i<closes.length;i++){
     const d=closes[i]-closes[i-1];
     gains.push(Math.max(d,0)); losses.push(Math.max(-d,0));
   }
+  if(gains.length < RSI_PERIOD) return out;
   let avgGain=gains.slice(0,RSI_PERIOD).reduce((a,b)=>a+b,0)/RSI_PERIOD;
   let avgLoss=losses.slice(0,RSI_PERIOD).reduce((a,b)=>a+b,0)/RSI_PERIOD;
-  const rsiArr=[];
   for(let i=RSI_PERIOD;i<gains.length;i++){
     avgGain=(avgGain*(RSI_PERIOD-1)+gains[i])/RSI_PERIOD;
     avgLoss=(avgLoss*(RSI_PERIOD-1)+losses[i])/RSI_PERIOD;
     const rs = avgLoss===0?100:avgGain/avgLoss;
-    rsiArr.push(100-(100/(1+rs)));
+    out[i+1] = 100-(100/(1+rs));
   }
-  return rsiArr;
+  return out;
 }
-function fibLevels(high, low){
-  const diff=high-low;
-  return {"23.6":high-0.236*diff,"38.2":high-0.382*diff,"50.0":high-0.5*diff,"61.8":high-0.618*diff};
-}
-function nearestLevelDistPct(price, levels){
-  let best=Infinity, bestName=null;
-  for(const [name,lvl] of Object.entries(levels)){
-    const d=Math.abs(price-lvl)/lvl;
-    if(d<best){best=d; bestName=name;}
+
+function dateLabel(ms){ return new Date(ms).toISOString().slice(0,10); }
+
+function groupByDay(candles){
+  const map = new Map();
+  for(const c of candles){
+    const key = Math.floor(c.time/DAY_MS)*DAY_MS;
+    if(!map.has(key)) map.set(key, []);
+    map.get(key).push(c);
   }
-  return {dist:best, name:bestName};
+  const keys = [...map.keys()].sort((a,b)=>a-b);
+  const days = keys.map(k=>({dayKey:k, dateLabel:dateLabel(k), candles:map.get(k)}));
+  if(days.length>0) days.pop(); // drop current (open) day
+  return days;
+}
+
+function findSetups(symbol, candles){
+  const days = groupByDay(candles);
+  const cutoff = Date.now() - LOOKBACK_DAYS*DAY_MS;
+  const setups = [];
+
+  for(let k=0; k+2<days.length; k++){
+    const dayA=days[k], dayB=days[k+1], dayC=days[k+2];
+    if(dayC.candles[dayC.candles.length-1].time < cutoff) continue;
+
+    const earlyWindow=[...dayA.candles, ...dayB.candles];
+    const lateWindow=[...dayB.candles, ...dayC.candles];
+
+    const overboughtCandles = lateWindow.filter(c=>c.rsi!==null && c.rsi>OVERBOUGHT);
+    if(overboughtCandles.length===0) continue;
+    let n1Candle = overboughtCandles[0];
+    for(const c of overboughtCandles) if(c.high > n1Candle.high) n1Candle = c;
+
+    const hasInvalid = earlyWindow.some(c=>c.rsi!==null && (c.rsi>OVERBOUGHT || c.rsi<OVERSOLD));
+    if(hasInvalid) continue;
+
+    let touchCandle=null;
+    for(let i=1;i<earlyWindow.length;i++){
+      const prev=earlyWindow[i-1], cur=earlyWindow[i];
+      if(prev.rsi===null || cur.rsi===null) continue;
+      if((prev.rsi-TOUCH_LEVEL)*(cur.rsi-TOUCH_LEVEL) <= 0){ touchCandle = cur; }
+    }
+    if(!touchCandle) continue;
+
+    const n1=n1Candle.high, n2=touchCandle.low;
+    const diff=n1-n2;
+    if(diff<=0) continue;
+
+    const zoneHigh = n2 - EXT_NEAR*diff;
+    const zoneLow = n2 - EXT_FAR*diff;
+    const formedTime = dayC.candles[dayC.candles.length-1].time;
+
+    const alreadyHit = candles.some(c => c.time>formedTime && c.low<=zoneHigh && c.high>=zoneLow);
+    if(alreadyHit) continue;
+
+    setups.push({symbol, n1Price:n1, n1Time:n1Candle.time, n2Price:n2, n2Time:touchCandle.time, zoneLow, zoneHigh, formedTime});
+  }
+  return setups;
 }
 
 async function getTopSymbols(){
@@ -296,31 +270,13 @@ async function getTopSymbols(){
 }
 
 async function fetchCandles(symbol){
-  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=1h&limit=120`;
+  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=1h&limit=1000`;
   const res = await fetch(url);
   if(!res.ok) throw new Error("http "+res.status);
   const raw = await res.json();
-  return raw.map(c=>({high:+c[2], low:+c[3], close:+c[4]}));
-}
-
-function analyze(candles){
-  const closes = candles.map(c=>c.close);
-  const rsiArr = computeRSI(closes);
-  const currentRSI = rsiArr[rsiArr.length-1];
-  const currentPrice = closes[closes.length-1];
-  const win = candles.slice(-SWING_LOOKBACK);
-  const swingHigh = Math.max(...win.map(c=>c.high));
-  const swingLow = Math.min(...win.map(c=>c.low));
-  const levels = fibLevels(swingHigh, swingLow);
-  const nearest = nearestLevelDistPct(currentPrice, levels);
-
-  let signal="NONE", reason="";
-  if(currentRSI < RSI_OVERSOLD){
-    signal="BUY"; reason=`RSI ${currentRSI.toFixed(1)} is oversold (below ${RSI_OVERSOLD}) — check the chart before entering`;
-  } else if(currentRSI > RSI_OVERBOUGHT){
-    signal="SELL"; reason=`RSI ${currentRSI.toFixed(1)} is overbought (above ${RSI_OVERBOUGHT}) — check the chart before entering`;
-  }
-  return {signal, price:currentPrice, rsi:currentRSI, reason, nearestDist:nearest.dist, nearestName:nearest.name};
+  const closes = raw.map(c=>+c[4]);
+  const rsiArr = computeRSISeries(closes);
+  return raw.map((c,i)=>({time:+c[0], high:+c[2], low:+c[3], close:+c[4], rsi:rsiArr[i]}));
 }
 
 function setStatus(mode, text){
@@ -331,7 +287,6 @@ function setStatus(mode, text){
 
 function fmtPrice(p){ return "$"+p.toLocaleString(undefined,{maximumFractionDigits:p<10?4:2}); }
 
-// ---- ticker tape ----
 function renderTicker(symbolData){
   const top = [...symbolData].sort((a,b)=>b.priceChangePercent-a.priceChangePercent).slice(0,12);
   const track = document.getElementById('tickerTrack');
@@ -341,11 +296,9 @@ function renderTicker(symbolData){
     const arrow = chg>=0 ? '▲' : '▼';
     return `<span class="ticker-item">${t.symbol.replace("USDT","/USDT")} <b>${fmtPrice(t.lastPrice)}</b> <span class="${cls}">${arrow} ${Math.abs(chg).toFixed(2)}%</span></span>`;
   }).join("");
-  // duplicate content so the loop scrolls seamlessly
   track.innerHTML = html + html;
 }
 
-// ---- TradingView embedded chart ----
 let currentChartSymbol = null;
 function renderChart(symbol){
   if(symbol === currentChartSymbol) return;
@@ -386,48 +339,36 @@ function renderChart(symbol){
   box.appendChild(container);
 }
 
-function renderResults(results){
-  const hits = results.filter(r=>r.signal!=="NONE").sort((a,b)=>{
-    const aExt = a.signal==="BUY" ? a.rsi : 100-a.rsi;
-    const bExt = b.signal==="BUY" ? b.rsi : 100-b.rsi;
-    return aExt-bExt;
-  });
-  const countEl = document.getElementById('hitsCount');
-  countEl.textContent = hits.length;
-  countEl.className = "hits-count " + (hits.length>0 ? "some":"zero");
+function renderResults(bySymbol){
+  const symbols = Object.keys(bySymbol).filter(s => bySymbol[s].length > 0);
+  const totalSetups = symbols.reduce((n,s)=>n+bySymbol[s].length, 0);
 
-  notifyNewSignals(hits);
-  renderChart(hits.length > 0 ? hits[0].symbol : "BTCUSDT");
+  const countEl = document.getElementById('hitsCount');
+  countEl.textContent = totalSetups;
+  countEl.className = "hits-count " + (totalSetups>0 ? "some":"zero");
+
+  renderChart(symbols.length > 0 ? symbols[0] : "BTCUSDT");
 
   const hitsList = document.getElementById('hitsList');
-  if(hits.length===0){
-    hitsList.innerHTML = `<div class="empty-state">No coin is matching the RSI + Fibonacci setup right now.<br>Scanner rechecks every 3 minutes.</div>`;
-  }else{
-    hitsList.innerHTML = hits.map(r=>`
-      <div class="signal-card ${r.signal.toLowerCase()}">
-        <div class="sig-icon">${r.signal==="BUY"?"▲":"▼"}</div>
-        <div class="sig-body">
-          <div class="sig-top">
-            <span class="sig-coin">${r.symbol.replace("USDT","/USDT")}</span>
-            <span class="sig-badge">${r.signal}</span>
-          </div>
-          <div class="sig-price">${fmtPrice(r.price)} · RSI ${r.rsi.toFixed(1)}</div>
-          <div class="sig-reason">${r.reason}</div>
-        </div>
-      </div>`).join("");
+  if(symbols.length===0){
+    hitsList.innerHTML = `<div class="empty-state">No coin has an active, not-yet-reached setup right now.<br>Scanner rechecks every 3 minutes.</div>`;
+    return;
   }
-
-  const rsiDistToZone = (rsi) => Math.min(Math.abs(rsi-RSI_OVERSOLD), Math.abs(rsi-RSI_OVERBOUGHT));
-  const watchCandidates = results
-    .filter(r=>r.signal==="NONE")
-    .sort((a,b)=> rsiDistToZone(a.rsi)-rsiDistToZone(b.rsi))
-    .slice(0,8);
-  document.getElementById('watchList').innerHTML = watchCandidates.map(r=>`
-    <div class="watch-row">
-      <span class="watch-coin">${r.symbol.replace("USDT","")}</span>
-      <span class="watch-rsi ${r.rsi<40?'low':r.rsi>60?'high':''}">RSI ${r.rsi.toFixed(1)}</span>
-      <span class="watch-price">${fmtPrice(r.price)} · fib ${r.nearestName}%</span>
-    </div>`).join("");
+  hitsList.innerHTML = symbols.map(sym=>{
+    const setups = bySymbol[sym];
+    const rows = setups.map(s=>`
+      <div class="setup-row">
+        <div class="setup-zone">${fmtPrice(s.zoneLow)} – ${fmtPrice(s.zoneHigh)}</div>
+        <div class="setup-meta">N1 (overbought) ${fmtPrice(s.n1Price)} on ${dateLabel(s.n1Time)} · N2 (RSI 40 touch) ${fmtPrice(s.n2Price)} on ${dateLabel(s.n2Time)}</div>
+      </div>`).join("");
+    return `<div class="coin-group">
+      <div class="coin-head">
+        <span class="coin-name">${sym.replace("USDT","/USDT")}</span>
+        <span class="coin-count">${setups.length} active setup${setups.length>1?'s':''}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join("");
 }
 
 async function runScan(){
@@ -438,14 +379,13 @@ async function runScan(){
     const symbols = symbolData.map(s=>s.symbol);
     document.getElementById('scanCount').textContent = `0 / ${symbols.length}`;
 
-    const results = [];
+    const bySymbol = {};
     for(let i=0;i<symbols.length;i++){
       const sym = symbols[i];
       try{
         const candles = await fetchCandles(sym);
-        const a = analyze(candles);
-        results.push({symbol: sym, ...a});
-      }catch(e){ /* skip symbol on error */ }
+        bySymbol[sym] = findSetups(sym, candles);
+      }catch(e){ bySymbol[sym] = []; }
 
       document.getElementById('scanCount').textContent = `${i+1} / ${symbols.length}`;
       document.getElementById('scanFill').style.width = `${((i+1)/symbols.length)*100}%`;
@@ -453,7 +393,7 @@ async function runScan(){
       await new Promise(r=>setTimeout(r, 120));
     }
 
-    renderResults(results);
+    renderResults(bySymbol);
     setStatus('live', `live · last scan just now · next in 3m`);
   }catch(e){
     console.error(e);
@@ -478,7 +418,7 @@ document.getElementById('subBtn').addEventListener('click', async () => {
     });
     const data = await res.json();
     if(data.ok){
-      msg.textContent = "Subscribed — you'll get an email when a signal fires.";
+      msg.textContent = "Subscribed — you'll get an email when a setup fires.";
       emailInput.value = "";
     }else{
       msg.textContent = data.error || "Something went wrong.";
